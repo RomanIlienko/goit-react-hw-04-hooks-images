@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import Modal from 'components/Modal';
 import Searchbar from 'components/Searchbar';
 import Button from 'components/Button';
-import ImageGallery from 'components/ImageGallery';
-import ImageGalleryItem from 'components/ImageGalleryItem';
+import ImageGallery from 'components/ImageGallery'
 import MyLoader from 'components/Loader/Loader';
 import Error from 'components/Error/Error';
 
@@ -13,98 +12,88 @@ import { fetchPagesList } from 'services/PixaBayView';
 
 
 const App = () => {
-  const [hits, setHits] = useState([])
+  const [images, setImages] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoading, setSsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [selectedImg, setSelectedImg] = useState('')
+  const [largeImage, setLargeImg] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [tags, setTags] = useState('');
 
-  const componentDidUpdate = (prevProps, prevState) => {
-    if (prevState.searchQuery !== this.state.searchQuery) {
-      this.fetchPages()
+  useEffect(() => {
+    if (!searchQuery) {
+      return
     }
-   }
+
+    function fetchPages() {
+      setIsLoading(true);
+      
+      fetchPagesList(searchQuery, currentPage)
+        .then(images => {
+          setImages(prevState => [...prevState, ...images]);
+        })
+        .catch(error => setError("Something went wrong. Try again."))
+        .finally(() => {
+          setIsLoading(false)
+
+          window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: "smooth",
+          });
+        });
+    };
+    fetchPages()
+  }, [searchQuery, currentPage])
 
   const onChangeQuery = query => {
-    this.setState({
-      searchQuery: query,
-      currentPage: 1,
-      hits: [],
-      error: null,
-      selectedImg: '',
-    });
+    setSearchQuery(query)
+    setCurrentPage(1)
+    setImages([])
+    setError(null)
+    setLargeImg('')
   };
   
-  const fetchPages = () => {
-    const { currentPage, searchQuery } = this.state;
+  const bigImage = event => {
+    setLargeImg(event.target.dataset.url);
+    setTags(event.target.alt);
 
-    const options = {
-      searchQuery,
-      currentPage,
-    };
-
-    this.setState({ isLoading: true });
-
-    fetchPagesList(options)
-      .then(hits => {
-        this.setState(prevState => ({
-          hits: [...prevState.hits, ...hits],
-          currentPage: prevState.currentPage + 1,
-        }));
-      })
-      .catch(error => this.setState({ error: "Something went wrong. Try again." }))
-      .finally(() => {
-        this.setState({ isLoading: false });
-
-        window.scrollTo({
-          top: document.documentElement.scrollHeight,
-          behavior: "smooth",
-        });
-      });
-  };
-  
-  const setLargeImg = image => {
-    this.setState({ selectedImg: image.largeImageURL });
     toggleModal();
   };
 
   const toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal
-    }))
+    setShowModal(!showModal)
   }
 
-  // const { hits, isLoading, error, showModal, selectedImg } = this.state;
-  const shouldRenderLoadMoreButton = hits.length > 0 && !isLoading;
+  const buttonClickOnMore = () => {
+    setCurrentPage((state) => state + 1);
+  };
+
+  const shouldRenderLoadMoreButton = images.length > 0 && !isLoading;
 
   return (
     <>
       <Searchbar onSubmit={onChangeQuery} />
 
-        { error && <Error textError={error.textError} />}
+      {error && <Error textError={error} />}
 
-        {hits.length > 0 && !error && 
-         <ImageGallery>
-         {hits.map(hit => (
-          <ImageGalleryItem
-            key={hit.id}
-            hit={hit}
-            setLargeImg={setLargeImg}
-           />
-         ))}
-         </ImageGallery>
-        }
+      {images.length > 0 && !error && (
+        <ImageGallery
+              images={images}
+          ocClick={bigImage} />
+      )}
         
-        {isLoading && <MyLoader />}
+      {isLoading && <MyLoader />}
 
-        {shouldRenderLoadMoreButton && <Button loadMore={fetchPages} />}
+      {shouldRenderLoadMoreButton && <Button loadMore={buttonClickOnMore} />}
         
-        {showModal && <Modal largeImgUrl={selectedImg} onClose={toggleModal} />}
-      </>
+      {showModal &&
+        <Modal onClose={toggleModal}>
+         <img src={largeImage} alt={tags} />
+        </Modal>
+      }
+    </>
   )
-
 }
 
 export default App
