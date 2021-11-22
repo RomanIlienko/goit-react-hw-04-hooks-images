@@ -1,37 +1,30 @@
-import React from 'react'
+import { useState } from 'react'
 
 import PropTypes from 'prop-types'
 import s from './Searchbar.module.css'
 
-export default class Searchbar extends React.Component {
-    state = {
-        query: ''
+const Searchbar = ({ onSubmit }) => {
+    const [query, setQuery] = useState('')
+    
+    const handleChange = e => {
+        setQuery(e.currentTarget.value.toLowerCase())
     };
 
-    static propTypes = {
-    onSubmit: PropTypes.func.isRequired,
-    };
-
-    handleChange = e => {
-        this.setState({ query: e.currentTarget.value.toLowerCase() })
-    };
-
-    handleSubmit = e => {
+    const handleSubmit = e => {
         e.preventDefault();
 
-        if (this.state.query.trim() === '') {
+        if (query.trim() === '') {
             alert('Please enter a valid name')
             return;
         }
 
-        this.props.onSubmit(this.state.query);
-        this.setState({ query: ''})
+        onSubmit(query);
+        setQuery('')
     }
-
-    render() {
-        return (
-         <header className={s.Searchbar}>
-            <form className={s.SearchForm} onSubmit={this.handleSubmit}>
+    
+    return (
+        <header className={s.Searchbar}>
+            <form className={s.SearchForm} onSubmit={handleSubmit}>
                 <button type="submit" className={s.SearchFormButton}>
                     <span className={s.SearchFormButtonLabel}></span>
                 </button>
@@ -40,13 +33,18 @@ export default class Searchbar extends React.Component {
                  className={s.SearchFormInput}
                  type="text"
                  autoComplete="off"
-                 value={this.state.query}
-                 onChange={this.handleChange}
+                 value={query}
+                 onChange={handleChange}
                  autoFocus
                  placeholder="Search images and photos"
                 />
             </form>
          </header>
-        )
-    }
+    )
 }
+
+Searchbar.propTypes = {
+    onSubmit: PropTypes.func.isRequired,
+};
+
+export default Searchbar
